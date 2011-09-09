@@ -77,21 +77,10 @@ func String(prompt string) string {
 	return s
 }
 
-type TabCompleter interface {
-	Complete(query string) []string
-}
-
-type CompleterFunc func(string) []string
-
-func (f CompleterFunc) Complete(query string) []string {
-	return f(query)
-}
-
-// This function is called whenever tab completion is invoked. Given a query
-// string, it should return all items that match.
-var Completer TabCompleter = CompleterFunc(func(query string) []string {
+// This function provides entries for the tab completer.
+var Completer = func(query string) []string {
 	return nil
-})
+}
 
 var entries []*C.char
 
@@ -99,7 +88,7 @@ var entries []*C.char
 func _completion_function(p *C.char, _i C.int) *C.char {
 	i := int(_i)
 	if i == 0 {
-		es := Completer.Complete(C.GoString(p))
+		es := Completer(C.GoString(p))
 		entries = make([]*C.char, len(es))
 		for i, x := range es {
 			entries[i] = C.CString(x)
