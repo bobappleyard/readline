@@ -22,7 +22,7 @@ Using the library
 
 	import "github.com/bobappleyard/readline"
 
-These bindings provided access to three basic features of Readline:
+These bindings provide access to three basic features of Readline:
 
 - Getting text from a prompt (via the String() and Reader() functions).
 - Managing the prompt's history (via the AddHistory(), GetHistory(), 
