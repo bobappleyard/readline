@@ -29,4 +29,24 @@ These bindings provide access to three basic features of Readline:
   ClearHistory() and HistorySize() functions).
 - Controlling tab completion (via the Completer variable).
 
+An example of the library's use:
+
+	package main
+
+	import (
+		"fmt"
+		"github.com/bobappleyard/readline"
+	)
+
+	func main() {
+		for {
+			l := readline.String("> ")
+			if l == "exit" {
+				break
+			}
+			fmt.Println(l)
+			readline.AddHistory(l)
+		}
+	}
+
 
