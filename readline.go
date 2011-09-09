@@ -51,18 +51,16 @@ func (r *reader) getLine(prompt string) {
 }
 
 func (r *reader) Read(buf []byte) (int, os.Error) {
-	l := len(*r)
-	m := len(buf)
-	if m > l {
-		copy(buf, *r)
+	if *r == nil {
 		r.getLine(Continue)
-		copy(buf[l:], *r)
-		*r = (*r)[m-l:]
-	} else {
-		copy(buf, *r)
-		*r = (*r)[m:]
-	}	
-	return m, nil
+	}
+	copy(buf, *r)
+	l := len(buf)
+	if len(buf) > len(*r) {
+		l = len(*r)
+	}
+	*r = (*r)[l:]
+	return l, nil
 }
 
 // Read a line with the given prompt.
