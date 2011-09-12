@@ -15,6 +15,7 @@ extern char *_completion_function(const char *s, int i);
 
 static void register_readline() {
 	rl_completion_entry_function = _completion_function;
+	rl_basic_word_break_characters  = "";
 	using_history();
 }
 
