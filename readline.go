@@ -52,7 +52,7 @@ func (r *reader) getLine(prompt string) {
 }
 
 func (r *reader) Read(buf []byte) (int, os.Error) {
-	if *r == nil {
+	if len(*r) == 0 {
 		r.getLine(Continue)
 	}
 	copy(buf, *r)
