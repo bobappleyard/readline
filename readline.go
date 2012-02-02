@@ -24,7 +24,6 @@ import "C"
 
 import (
 	"io"
-	"os"
 	"unsafe"
 )
 
@@ -51,7 +50,7 @@ func (r *reader) getLine(prompt string) {
 	*r = []byte(String(prompt) + "\n")
 }
 
-func (r *reader) Read(buf []byte) (int, os.Error) {
+func (r *reader) Read(buf []byte) (int, error) {
 	if len(*r) == 0 {
 		r.getLine(Continue)
 	}
@@ -126,4 +125,3 @@ func HistorySize() int {
 func init() {
 	C.register_readline()
 }
-
