@@ -11,10 +11,14 @@ package readline
 #include <readline/readline.h>
 #include <readline/history.h>
 
-extern char *_completion_function(const char *s, int i);
+extern char *_completion_function(char *s, int i);
+
+static char *_completion_function_trans(const char *s, int i) {
+	return _completion_function((char *) s, i);
+}
 
 static void register_readline() {
-	rl_completion_entry_function = _completion_function;
+	rl_completion_entry_function = _completion_function_trans;
 	rl_basic_word_break_characters  = "";
 	using_history();
 }
