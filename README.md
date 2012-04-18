@@ -11,7 +11,9 @@ Installing the library
 
 To install the library in order to use it, type
 
-	goinstall github.com/bobappleyard/readline
+	go get github.com/bobappleyard/readline
+
+You may need to be root.
 
 To install the library in order to hack on it, type
 
