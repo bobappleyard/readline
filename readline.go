@@ -79,7 +79,7 @@ func String(prompt string) string {
 }
 
 // This function provides entries for the tab completer.
-var Completer = func(query string) []string {
+var Completer = func(query, ctx string) []string {
 	return nil
 }
 
@@ -89,7 +89,7 @@ var entries []*C.char
 func _completion_function(p *C.char, _i C.int) *C.char {
 	i := int(_i)
 	if i == 0 {
-		es := Completer(C.GoString(p))
+		es := Completer(C.GoString(p), C.GoString(C.rl_line_buffer))
 		entries = make([]*C.char, len(es))
 		for i, x := range es {
 			entries[i] = C.CString(x)
