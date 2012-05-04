@@ -50,12 +50,20 @@ func (r *reader) init() *reader {
 }
 
 func (r *reader) getLine(prompt string) {
-	*r = []byte(String(prompt) + "\n")
+	s := String(prompt)
+	if s == "" {
+		*r = []byte{0}
+	} else {
+		*r = []byte(s)
+	}
 }
 
 func (r *reader) Read(buf []byte) (int, error) {
 	if len(*r) == 0 {
 		r.getLine(Continue)
+	}
+	if (*r)[0] == 0 {
+		return 0, io.EOF
 	}
 	copy(buf, *r)
 	l := len(buf)
@@ -74,6 +82,7 @@ func String(prompt string) string {
 	C.free(unsafe.Pointer(p))
 	if rp != nil {
 		C.free(unsafe.Pointer(rp))
+		return s + "\n"
 	}
 	return s
 }
