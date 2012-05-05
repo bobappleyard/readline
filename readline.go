@@ -96,6 +96,7 @@ var entries []*C.char
 
 //export _completion_function
 func _completion_function(p *C.char, _i C.int) *C.char {
+	C.rl_completion_suppress_append = 1
 	i := int(_i)
 	if i == 0 {
 		es := Completer(C.GoString(p), C.GoString(C.rl_line_buffer))
@@ -110,14 +111,21 @@ func _completion_function(p *C.char, _i C.int) *C.char {
 	return entries[i]
 }
 
+func SetWordBreaks(cs string) {
+	C.rl_completer_word_break_characters = C.CString(cs)
+}
+
 // Add an item to the history.
 func AddHistory(s string) {
-	C.add_history(C.CString(s))
+	n := HistorySize()
+	if n == 0 || s != GetHistory(n - 1) {
+		C.add_history(C.CString(s))
+	}
 }
 
 // Retrieve a line from the history.
 func GetHistory(i int) string {
-	e := C.history_get(C.int(i))
+	e := C.history_get(C.int(i+1))
 	if e == nil {
 		return ""
 	}
@@ -132,6 +140,22 @@ func ClearHistory() {
 // Returns the number of items in the history.
 func HistorySize() int {
 	return int(C.history_length)
+}
+
+// Load the history from a file. Returns whether or not this was successful.
+func LoadHistory(path string) bool {
+	p := C.CString(path)
+	e := C.read_history(p)
+	C.free(unsafe.Pointer(p))
+	return e == 0
+}
+
+// Save the history to a file. Returns whether or not this was successful.
+func SaveHistory(path string) bool {
+	p := C.CString(path)
+	e := C.write_history(p)
+	C.free(unsafe.Pointer(p))
+	return e == 0
 }
 
 func init() {
