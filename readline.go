@@ -36,41 +36,58 @@ var Prompt = "> "
 // The continue prompt used by Reader().
 var Continue = ".."
 
-type reader []byte
+type state byte
+
+const (
+	readerStart state = iota
+	readerContinue
+	readerEnd
+)
+
+type reader struct {
+	buf []byte
+	state state
+}
 
 // Begin reading lines. If more than one line is required, the continue prompt
 // is used for subsequent lines.
 func Reader() io.Reader {
-	return new(reader).init()
+	return new(reader)
 }
 
-func (r *reader) init() *reader {
-	r.getLine(Prompt)
-	return r
-}
-
-func (r *reader) getLine(prompt string) error {
+func (r *reader) getLine() error {
+	prompt := Prompt
+	if r.state == readerContinue {
+		prompt = Continue
+	}
 	s, err := String(prompt)
 	if err != nil {
 		return err
 	}
-	*r = []byte(s)
+	r.buf = []byte(s)
 	return nil
 }
 
 func (r *reader) Read(buf []byte) (int, error) {
-	if len(*r) == 0 {
-		err := r.getLine(Continue)
+	if r.state == readerEnd {
+		return 0, io.EOF
+	}
+	if len(r.buf) == 0 {
+		err := r.getLine()
+		if err == io.EOF {
+			r.state = readerEnd
+		}
 		if err != nil {
 			return 0, err
 		}
+		r.state = readerContinue
 	}
-	copy(buf, *r)
+	copy(buf, r.buf)
 	l := len(buf)
-	if len(buf) > len(*r) {
-		l = len(*r)
+	if len(buf) > len(r.buf) {
+		l = len(r.buf)
 	}
-	*r = (*r)[l:]
+	r.buf = r.buf[l:]
 	return l, nil
 }
 
