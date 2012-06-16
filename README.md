@@ -6,6 +6,16 @@ This is a set of bindings to the GNU Readline Library.
 The existing readline bindings for Go are more limited than this library, if
 you can believe it.
 
+Note that the return type of String() has changed.
+
+It was
+
+	func String(prompt string) string
+	
+and it's now
+
+	func String(prompt string) (string, error)
+
 Installing the library
 ----------------------
 
@@ -36,14 +46,19 @@ An example of the library's use:
 	package main
 
 	import (
+		"io"
 		"fmt"
 		"github.com/bobappleyard/readline"
 	)
 
 	func main() {
 		for {
-			l := readline.String("> ")
-			if l == "exit" {
+			l, err := readline.String("> ")
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				fmt.Println("error: ", err)
 				break
 			}
 			fmt.Println(l)

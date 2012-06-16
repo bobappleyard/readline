@@ -49,21 +49,21 @@ func (r *reader) init() *reader {
 	return r
 }
 
-func (r *reader) getLine(prompt string) {
-	s := String(prompt)
-	if s == "" {
-		*r = []byte{0}
-	} else {
-		*r = []byte(s)
+func (r *reader) getLine(prompt string) error {
+	s, err := String(prompt)
+	if err != nil {
+		return err
 	}
+	*r = []byte(s)
+	return nil
 }
 
 func (r *reader) Read(buf []byte) (int, error) {
 	if len(*r) == 0 {
-		r.getLine(Continue)
-	}
-	if (*r)[0] == 0 {
-		return 0, io.EOF
+		err := r.getLine(Continue)
+		if err != nil {
+			return 0, err
+		}
 	}
 	copy(buf, *r)
 	l := len(buf)
@@ -75,16 +75,16 @@ func (r *reader) Read(buf []byte) (int, error) {
 }
 
 // Read a line with the given prompt.
-func String(prompt string) string {
+func String(prompt string) (string, error) {
 	p := C.CString(prompt)
 	rp := C.readline(p)
 	s := C.GoString(rp)
 	C.free(unsafe.Pointer(p))
 	if rp != nil {
 		C.free(unsafe.Pointer(rp))
-		return s + "\n"
+		return s, nil
 	}
-	return s
+	return s, io.EOF
 }
 
 // This function provides entries for the tab completer.
