@@ -1,5 +1,35 @@
-// Access to basic readline functions. Support for history manipulation and tab
-// completion are provided. Not much of the library is exposed though.
+/*
+This package provides access to basic GNU Readline functions. Currently supported are:
+
+	- getting text from a prompt (via the String() and NewReader() functions).
+	- managing the prompt's history (via the AddHistory(), GetHistory(), ClearHistory() and HistorySize() functions).
+	- controlling tab completion (via the Completer variable).
+
+Here is a simple example:
+
+	package main
+
+	import (
+	    "fmt"
+	    "io"
+	    "github.com/bobappleyard/readline"
+	)
+
+	func main() {
+	    for {
+	        l, err := readline.String("> ")
+	        if err == io.EOF {
+	            break
+	        }
+	        if err != nil {
+	            fmt.Println("error: ", err)
+	            break
+	        }
+	        fmt.Println(l)
+	        readline.AddHistory(l)
+	    }
+	}
+*/
 package readline
 
 /*
