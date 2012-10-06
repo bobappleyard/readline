@@ -1,5 +1,35 @@
-// Access to basic readline functions. Support for history manipulation and tab
-// completion are provided. Not much of the library is exposed though.
+/*
+This package provides access to basic GNU Readline functions. Currently supported are:
+
+	- getting text from a prompt (via the String() and NewReader() functions).
+	- managing the prompt's history (via the AddHistory(), GetHistory(), ClearHistory() and HistorySize() functions).
+	- controlling tab completion (via the Completer variable).
+
+Here is a simple example:
+
+	package main
+
+	import (
+	    "fmt"
+	    "io"
+	    "github.com/bobappleyard/readline"
+	)
+
+	func main() {
+	    for {
+	        l, err := readline.String("> ")
+	        if err == io.EOF {
+	            break
+	        }
+	        if err != nil {
+	            fmt.Println("error: ", err)
+	            break
+	        }
+	        fmt.Println(l)
+	        readline.AddHistory(l)
+	    }
+	}
+*/
 package readline
 
 /*
@@ -28,6 +58,7 @@ import "C"
 import (
 	"io"
 	"unsafe"
+	"syscall"
 )
 
 // The default prompt used by Reader().
@@ -51,7 +82,7 @@ type reader struct {
 
 // Begin reading lines. If more than one line is required, the continue prompt
 // is used for subsequent lines.
-func Reader() io.Reader {
+func NewReader() io.Reader {
 	return new(reader)
 }
 
@@ -159,20 +190,36 @@ func HistorySize() int {
 	return int(C.history_length)
 }
 
-// Load the history from a file. Returns whether or not this was successful.
-func LoadHistory(path string) bool {
+// Load the history from a file.
+func LoadHistory(path string) error {
 	p := C.CString(path)
 	e := C.read_history(p)
 	C.free(unsafe.Pointer(p))
-	return e == 0
+
+	if e == 0 {
+		return nil
+	}
+	return syscall.Errno(e)
 }
 
-// Save the history to a file. Returns whether or not this was successful.
-func SaveHistory(path string) bool {
+// Save the history to a file.
+func SaveHistory(path string) error {
 	p := C.CString(path)
 	e := C.write_history(p)
 	C.free(unsafe.Pointer(p))
-	return e == 0
+
+	if e == 0 {
+		return nil
+	}
+	return syscall.Errno(e)
+}
+
+// Frees internal memory and restores terminal attributes. This
+// function should be called when readline doesn't return and would
+// leave the terminal in a corrupted state.
+func Cleanup() {
+	C.rl_free_line_state()
+	C.rl_cleanup_after_signal()
 }
 
 func init() {
