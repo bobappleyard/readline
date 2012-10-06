@@ -28,6 +28,7 @@ import "C"
 import (
 	"io"
 	"unsafe"
+	"syscall"
 )
 
 // The default prompt used by Reader().
@@ -159,20 +160,28 @@ func HistorySize() int {
 	return int(C.history_length)
 }
 
-// Load the history from a file. Returns whether or not this was successful.
-func LoadHistory(path string) bool {
+// Load the history from a file.
+func LoadHistory(path string) error {
 	p := C.CString(path)
 	e := C.read_history(p)
 	C.free(unsafe.Pointer(p))
-	return e == 0
+
+	if e == 0 {
+		return nil
+	}
+	return syscall.Errno(e)
 }
 
-// Save the history to a file. Returns whether or not this was successful.
-func SaveHistory(path string) bool {
+// Save the history to a file.
+func SaveHistory(path string) error {
 	p := C.CString(path)
 	e := C.write_history(p)
 	C.free(unsafe.Pointer(p))
-	return e == 0
+
+	if e == 0 {
+		return nil
+	}
+	return syscall.Errno(e)
 }
 
 func init() {
