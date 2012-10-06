@@ -82,7 +82,7 @@ type reader struct {
 
 // Begin reading lines. If more than one line is required, the continue prompt
 // is used for subsequent lines.
-func Reader() io.Reader {
+func NewReader() io.Reader {
 	return new(reader)
 }
 
