@@ -184,6 +184,14 @@ func SaveHistory(path string) error {
 	return syscall.Errno(e)
 }
 
+// Frees internal memory and restores terminal attributes. This
+// function should be called when readline doesn't return and would
+// leave the terminal in a corrupted state.
+func Cleanup() {
+	C.rl_free_line_state()
+	C.rl_cleanup_after_signal()
+}
+
 func init() {
 	C.register_readline()
 }
