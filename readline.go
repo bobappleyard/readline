@@ -56,6 +56,7 @@ static void register_readline() {
 import "C"
 
 import (
+	"fmt"
 	"io"
 	"unsafe"
 	"syscall"
@@ -241,6 +242,17 @@ func CatchResize(catch bool) {
 		C.rl_catch_sigwinch = 1
 	} else {
 		C.rl_catch_sigwinch = 0
+	}
+}
+
+// Sets if readline should catch the signals SIGINT, SIGQUIT, SIGTERM,
+// SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU. See also CatchResize() and
+// Cleanup().
+func CatchSignals(catch bool) {
+	if catch {
+		C.rl_catch_signals = 1
+	} else {
+		C.rl_catch_signals = 0
 	}
 }
 
