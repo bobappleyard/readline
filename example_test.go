@@ -35,3 +35,13 @@ func ExampleCleanup() {
 		fmt.Printf("Read line %s, error %v\n", line, err)
 	}
 }
+
+func ExampleEscapePrompt() {
+	// ANSI escape sequences
+    bright := "\x1b[1m"
+    reset := "\x1b[0m"
+	
+	prompt := readline.EscapePrompt("Command: " + bright)
+	line, err := readline.String(prompt)
+	fmt.Print(reset) // Revert terminal to non-bright text
+}
