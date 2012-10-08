@@ -56,6 +56,7 @@ static void register_readline() {
 import "C"
 
 import (
+	"fmt"
 	"io"
 	"unsafe"
 	"syscall"
@@ -220,6 +221,39 @@ func SaveHistory(path string) error {
 func Cleanup() {
 	C.rl_free_line_state()
 	C.rl_cleanup_after_signal()
+}
+
+// This function should be called when the SIGWINCH signal is not
+// handled by readline, to update readline's internal notion of the
+// screen size.
+func Resize() {
+	// Print the 'reset' ANSI escape code, so that the current prompt
+	// ANSI codes won't corrupt the start of the refreshed prompt
+	fmt.Print("\x1b[0m")
+
+	C.rl_resize_terminal()
+}
+
+// Sets if readline should catch the SIGWINCH signal emitted when the
+// terminal size changes. If set to false, the Resize() function
+// should be called manually.
+func CatchResize(catch bool) {
+	if catch {
+		C.rl_catch_sigwinch = 1
+	} else {
+		C.rl_catch_sigwinch = 0
+	}
+}
+
+// Sets if readline should catch the signals SIGINT, SIGQUIT, SIGTERM,
+// SIGALRM, SIGTSTP, SIGTTIN, and SIGTTOU. See also CatchResize() and
+// Cleanup().
+func CatchSignals(catch bool) {
+	if catch {
+		C.rl_catch_signals = 1
+	} else {
+		C.rl_catch_signals = 0
+	}
 }
 
 func init() {
