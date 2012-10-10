@@ -57,8 +57,9 @@ import "C"
 
 import (
 	"io"
-	"unsafe"
+	"regexp"
 	"syscall"
+	"unsafe"
 )
 
 // The default prompt used by Reader().
@@ -66,6 +67,15 @@ var Prompt = "> "
 
 // The continue prompt used by Reader().
 var Continue = ".."
+
+// These characters must be used to surround sequences of invisible characters in a prompt. Example:
+// 	bright := "\x1b[1m" // ANSI escape sequence for bright text
+// 	readline.Prompt = fmt.Sprintf("> %c%s%c", readline.PromptStartIgnore, bright, readline.PromptEndIgnore)
+// See also EscapePrompt()
+const (
+	PromptStartIgnore = rune(C.RL_PROMPT_START_IGNORE)
+	PromptEndIgnore = rune(C.RL_PROMPT_END_IGNORE)
+)
 
 type state byte
 
@@ -79,6 +89,13 @@ type reader struct {
 	buf []byte
 	state state
 }
+
+var shortEscRegex = "\x1b[@-Z\\-_]"
+var csiPrefix = "(\x1b[[]|\xC2\x9b)"
+var csiParam = "([0-9]+|\"[^\"]*\")"
+var csiSuffix = "[@-~]"
+var csiRegex = csiPrefix + "(" + csiParam + "(;" + csiParam + ")*)?" + csiSuffix
+var escapeSeq = regexp.MustCompile(shortEscRegex + "|" + csiRegex)
 
 // Begin reading lines. If more than one line is required, the continue prompt
 // is used for subsequent lines.
@@ -220,6 +237,12 @@ func SaveHistory(path string) error {
 func Cleanup() {
 	C.rl_free_line_state()
 	C.rl_cleanup_after_signal()
+}
+
+// Returns a copy of s with all ANSI escape sequences surrounded by
+// PromptStartIgnore and PromptEndIgnore characters
+func EscapePrompt(s string) string {
+	return escapeSeq.ReplaceAllString(s, string(PromptStartIgnore) + "$0" + string(PromptEndIgnore))
 }
 
 func init() {
