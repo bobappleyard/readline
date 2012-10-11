@@ -11,6 +11,8 @@ import (
 func ExampleCleanup() {
 	sigint := make(chan os.Signal, 1)
 	signal.Notify(sigint, syscall.SIGINT)
+	
+	readline.CatchSigint = false
 
 	var line string
 	var err error
@@ -28,8 +30,8 @@ func ExampleCleanup() {
 
 		// Restore terminal attributes
 		readline.Cleanup()
-		// Note that we still have a goroutine reading from Stdin,
-		// which will terminate when we exit.
+		// Note that we still have a goroutine reading from Stdin that
+		// will terminate when we exit.
 		os.Exit(1)
 	case <-done:
 		fmt.Printf("Read line %s, error %v\n", line, err)
