@@ -264,6 +264,9 @@ func EscapePrompt(s string) string {
 }
 
 func handleSignals() {
+	C.rl_catch_signals = 0
+	C.rl_catch_sigwinch = 0
+
 	signals := make(chan os.Signal, 2)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGWINCH)
 
