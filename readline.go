@@ -56,7 +56,10 @@ static void register_readline() {
 import "C"
 
 import (
+	"fmt"
 	"io"
+	"os"
+	"os/signal"
 	"regexp"
 	"syscall"
 	"unsafe"
@@ -76,6 +79,17 @@ const (
 	PromptStartIgnore = rune(C.RL_PROMPT_START_IGNORE)
 	PromptEndIgnore = rune(C.RL_PROMPT_END_IGNORE)
 )
+
+// The readline package adds a signal handler for SIGINT at init. If
+// CatchSigint is true, upon receiving the signal (typically from the
+// user pressing Ctrl+C) it will restore the terminal attributes and
+// call os.Exit(1).
+//
+// Applications that install their own SIGINT handler should set this
+// variable to false, and call Cleanup() manually if the handler
+// causes the application to terminate while a String() call is
+// running.
+var CatchSigint = true
 
 type state byte
 
@@ -231,9 +245,13 @@ func SaveHistory(path string) error {
 	return syscall.Errno(e)
 }
 
-// Frees internal memory and restores terminal attributes. This
-// function should be called when readline doesn't return and would
-// leave the terminal in a corrupted state.
+// Cleanup() frees internal memory and restores terminal
+// attributes. This function should be called when program execution
+// stops before the return of a String() call, so as not to leave the
+// terminal in a corrupted state.
+//
+// If the CatchSigint variable is set to true (default), Cleanup() is
+// called automatically on reception of a SIGINT signal.
 func Cleanup() {
 	C.rl_free_line_state()
 	C.rl_cleanup_after_signal()
@@ -245,6 +263,32 @@ func EscapePrompt(s string) string {
 	return escapeSeq.ReplaceAllString(s, string(PromptStartIgnore) + "$0" + string(PromptEndIgnore))
 }
 
+func handleSignals() {
+	C.rl_catch_signals = 0
+	C.rl_catch_sigwinch = 0
+
+	signals := make(chan os.Signal, 2)
+	signal.Notify(signals, syscall.SIGINT, syscall.SIGWINCH)
+
+	for s := range signals {
+		switch s {
+		case syscall.SIGWINCH:
+			// Print the 'reset' ANSI escape code, so that the current prompt
+			// ANSI codes won't corrupt the start of the refreshed prompt
+			fmt.Print("\x1b[0m")
+			C.rl_resize_terminal()
+
+		case syscall.SIGINT:
+			if CatchSigint {
+				Cleanup()
+				os.Exit(1)
+			}
+		}
+	}
+}
+
 func init() {
+	go handleSignals()
+
 	C.register_readline()
 }
