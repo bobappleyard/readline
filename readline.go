@@ -91,6 +91,11 @@ const (
 // running.
 var CatchSigint = true
 
+// If CompletionAppendChar is non-zero, readline will append the
+// corresponding character to the prompt after each completion. A
+// typical value would be a space.
+var CompletionAppendChar = 0
+
 type state byte
 
 const (
@@ -196,7 +201,7 @@ func FilenameCompleter(query, ctx string) []string {
 
 //export _completion_function
 func _completion_function(p *C.char, _i C.int) *C.char {
-	C.rl_completion_suppress_append = 1
+	C.rl_completion_append_character = C.int(CompletionAppendChar)
 	i := int(_i)
 	if i == 0 {
 		es := Completer(C.GoString(p), C.GoString(C.rl_line_buffer))
