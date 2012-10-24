@@ -46,4 +46,5 @@ func ExampleEscapePrompt() {
 	prompt := readline.EscapePrompt("Command: " + bright)
 	line, err := readline.String(prompt)
 	fmt.Print(reset) // Revert terminal to non-bright text
+	fmt.Printf("Read line %s, error %v\n", line, err)
 }
