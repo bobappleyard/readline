@@ -173,6 +173,27 @@ var Completer = func(query, ctx string) []string {
 
 var entries []*C.char
 
+// This function can be assigned to the Completer variable to use
+// readline's default filename completion, or it can be called by a
+// custom completer function to get a list of files and filter it.
+func FilenameCompleter(query, ctx string) []string {
+	var compls []string
+	var c *C.char
+	q := C.CString(query)
+
+	for i := 0;; i++ {
+		if c = C.rl_filename_completion_function(q, C.int(i)); c == nil {
+			break
+		}
+		compls = append(compls, C.GoString(c))
+		C.free(unsafe.Pointer(c))
+	}
+
+	C.free(unsafe.Pointer(q))
+
+	return compls
+}
+
 //export _completion_function
 func _completion_function(p *C.char, _i C.int) *C.char {
 	C.rl_completion_suppress_append = 1
