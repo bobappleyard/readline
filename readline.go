@@ -56,7 +56,6 @@ static void register_readline() {
 import "C"
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/signal"
@@ -65,19 +64,17 @@ import (
 	"unsafe"
 )
 
-// The default prompt used by Reader().
+// The prompt used by Reader(). The prompt can contain ANSI escape
+// sequences, they will be escaped as necessary.
 var Prompt = "> "
 
-// The continue prompt used by Reader().
+// The continue prompt used by Reader(). The prompt can contain ANSI escape
+// sequences, they will be escaped as necessary.
 var Continue = ".."
 
-// These characters must be used to surround sequences of invisible characters in a prompt. Example:
-// 	bright := "\x1b[1m" // ANSI escape sequence for bright text
-// 	readline.Prompt = fmt.Sprintf("> %c%s%c", readline.PromptStartIgnore, bright, readline.PromptEndIgnore)
-// See also EscapePrompt()
 const (
-	PromptStartIgnore = rune(C.RL_PROMPT_START_IGNORE)
-	PromptEndIgnore = rune(C.RL_PROMPT_END_IGNORE)
+	promptStartIgnore = string(C.RL_PROMPT_START_IGNORE)
+	promptEndIgnore = string(C.RL_PROMPT_END_IGNORE)
 )
 
 // The readline package adds a signal handler for SIGINT at init. If
@@ -90,6 +87,11 @@ const (
 // causes the application to terminate while a String() call is
 // running.
 var CatchSigint = true
+
+// If CompletionAppendChar is non-zero, readline will append the
+// corresponding character to the prompt after each completion. A
+// typical value would be a space.
+var CompletionAppendChar = 0
 
 type state byte
 
@@ -153,8 +155,11 @@ func (r *reader) Read(buf []byte) (int, error) {
 	return l, nil
 }
 
-// Read a line with the given prompt.
+// Read a line with the given prompt. The prompt can contain ANSI
+// escape sequences, they will be escaped as necessary.
 func String(prompt string) (string, error) {
+	prompt = "\x1b[0m" + prompt // Prepend a 'reset' ANSI escape sequence
+	prompt = escapeSeq.ReplaceAllString(prompt, promptStartIgnore + "$0" + promptEndIgnore)
 	p := C.CString(prompt)
 	rp := C.readline(p)
 	s := C.GoString(rp)
@@ -173,9 +178,30 @@ var Completer = func(query, ctx string) []string {
 
 var entries []*C.char
 
+// This function can be assigned to the Completer variable to use
+// readline's default filename completion, or it can be called by a
+// custom completer function to get a list of files and filter it.
+func FilenameCompleter(query, ctx string) []string {
+	var compls []string
+	var c *C.char
+	q := C.CString(query)
+
+	for i := 0;; i++ {
+		if c = C.rl_filename_completion_function(q, C.int(i)); c == nil {
+			break
+		}
+		compls = append(compls, C.GoString(c))
+		C.free(unsafe.Pointer(c))
+	}
+
+	C.free(unsafe.Pointer(q))
+
+	return compls
+}
+
 //export _completion_function
 func _completion_function(p *C.char, _i C.int) *C.char {
-	C.rl_completion_suppress_append = 1
+	C.rl_completion_append_character = C.int(CompletionAppendChar)
 	i := int(_i)
 	if i == 0 {
 		es := Completer(C.GoString(p), C.GoString(C.rl_line_buffer))
@@ -257,12 +283,6 @@ func Cleanup() {
 	C.rl_cleanup_after_signal()
 }
 
-// Returns a copy of s with all ANSI escape sequences surrounded by
-// PromptStartIgnore and PromptEndIgnore characters
-func EscapePrompt(s string) string {
-	return escapeSeq.ReplaceAllString(s, string(PromptStartIgnore) + "$0" + string(PromptEndIgnore))
-}
-
 func handleSignals() {
 	C.rl_catch_signals = 0
 	C.rl_catch_sigwinch = 0
@@ -273,9 +293,6 @@ func handleSignals() {
 	for s := range signals {
 		switch s {
 		case syscall.SIGWINCH:
-			// Print the 'reset' ANSI escape code, so that the current prompt
-			// ANSI codes won't corrupt the start of the refreshed prompt
-			fmt.Print("\x1b[0m")
 			C.rl_resize_terminal()
 
 		case syscall.SIGINT:
