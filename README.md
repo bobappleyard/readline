@@ -19,11 +19,15 @@ and it's now
 Installing the library
 ----------------------
 
-To install the library in order to use it, type
+To install the library in order to use it, type:
 
 	go get github.com/bobappleyard/readline
 
 You may need to be root.
+
+For Mac OS X users, you may see errors like `rl_catch_sigwinch undeclared`. If so, you need to install GNU Readline via [Homebrew](http://mxcl.github.com/homebrew/):
+
+	brew install readline
 
 To install the library in order to hack on it, type
 
