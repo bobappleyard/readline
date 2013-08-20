@@ -28,6 +28,22 @@ You may need to be root.
 For Mac OS X users, you may see errors like `rl_catch_sigwinch undeclared`. If so, you need to install GNU Readline via [Homebrew](http://mxcl.github.com/homebrew/):
 
 	brew install readline
+	
+On Mac OS X, if you encounter errors like these:
+
+	> go get github.com/bobappleyard/readline
+	# github.com/bobappleyard/readline
+	readline.go:38:19: error: stdio.h: No such file or directory
+	readline.go:39:20: error: stdlib.h: No such file or directory
+	In file included from /usr/local/opt/readline/include/readline/keymaps.h:35,
+        	         from /usr/local/opt/readline/include/readline/readline.h:37,
+                	 from readline.go:40:
+	/usr/local/opt/readline/include/readline/chardefs.h:25:19: error: ctype.h: No such file or directory
+	/usr/local/opt/readline/include/readline/chardefs.h:38:22: error: string.h: No such file or directory
+	In file included from readline.go:41:
+	/usr/local/opt/readline/include/readline/history.h:29:58: error: time.h: No such file or directory
+	
+You need to install "Command Line Tools" which can be done in XCode > Preferences > Downloads.
 
 To install the library in order to hack on it, type
 
