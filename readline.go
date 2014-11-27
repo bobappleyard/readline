@@ -42,6 +42,7 @@ package readline
 #include <stdlib.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <readline/keymaps.h>
 
 extern char *_completion_function(char *s, int i);
 
@@ -76,7 +77,7 @@ var Continue = ".."
 
 const (
 	promptStartIgnore = string(C.RL_PROMPT_START_IGNORE)
-	promptEndIgnore = string(C.RL_PROMPT_END_IGNORE)
+	promptEndIgnore   = string(C.RL_PROMPT_END_IGNORE)
 )
 
 // The readline package adds a signal handler for SIGINT at init. If
@@ -104,7 +105,7 @@ const (
 )
 
 type reader struct {
-	buf []byte
+	buf   []byte
 	state state
 }
 
@@ -161,7 +162,7 @@ func (r *reader) Read(buf []byte) (int, error) {
 // escape sequences, they will be escaped as necessary.
 func String(prompt string) (string, error) {
 	prompt = "\x1b[0m" + prompt // Prepend a 'reset' ANSI escape sequence
-	prompt = escapeSeq.ReplaceAllString(prompt, promptStartIgnore + "$0" + promptEndIgnore)
+	prompt = escapeSeq.ReplaceAllString(prompt, promptStartIgnore+"$0"+promptEndIgnore)
 	p := C.CString(prompt)
 	rp := C.readline(p)
 	s := C.GoString(rp)
@@ -188,7 +189,7 @@ func FilenameCompleter(query, ctx string) []string {
 	var c *C.char
 	q := C.CString(query)
 
-	for i := 0;; i++ {
+	for i := 0; ; i++ {
 		if c = C.rl_filename_completion_function(q, C.int(i)); c == nil {
 			break
 		}
@@ -225,18 +226,40 @@ func SetWordBreaks(cs string) {
 // Add an item to the history.
 func AddHistory(s string) {
 	n := HistorySize()
-	if n == 0 || s != GetHistory(n - 1) {
+	if n == 0 || s != GetHistory(n-1) {
 		C.add_history(C.CString(s))
 	}
 }
 
 // Retrieve a line from the history.
 func GetHistory(i int) string {
-	e := C.history_get(C.int(i+1))
+	e := C.history_get(C.int(i + 1))
 	if e == nil {
 		return ""
 	}
 	return C.GoString(e.line)
+}
+
+// Clear the screen
+func ClearScreen() {
+	var x, y C.int = 0, 0
+	C.rl_clear_screen(x, y)
+}
+
+// rl_forced_update_display / redraw
+func ForceUpdateDisplay() {
+	C.rl_forced_update_display()
+}
+
+// Replace current line
+func ReplaceLine(text string, clearUndo int) {
+	C.rl_replace_line(C.CString(text), C.int(clearUndo))
+}
+
+// Redraw current line
+func RefreshLine() {
+	var x, y C.int = 0, 0
+	C.rl_refresh_line(x, y)
 }
 
 // Deletes all the items in the history.
