@@ -313,14 +313,13 @@ func handleSignals() {
 	C.rl_catch_sigwinch = 0
 
 	signals := make(chan os.Signal, 2)
-	signal.Notify(signals, syscall.SIGINT, syscall.SIGWINCH)
+	signal.Notify(signals, syscall.SIGWINCH, os.Kill, os.Interrupt)
 
 	for s := range signals {
 		switch s {
 		case syscall.SIGWINCH:
 			C.rl_resize_terminal()
-
-		case syscall.SIGINT:
+		default:
 			if CatchSigint {
 				Cleanup()
 				os.Exit(1)
