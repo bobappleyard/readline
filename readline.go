@@ -80,17 +80,6 @@ const (
 	promptEndIgnore   = string(C.RL_PROMPT_END_IGNORE)
 )
 
-// The readline package adds a signal handler for SIGINT at init. If
-// CatchSigint is true, upon receiving the signal (typically from the
-// user pressing Ctrl+C) it will restore the terminal attributes and
-// call os.Exit(1).
-//
-// Applications that install their own SIGINT handler should set this
-// variable to false, and call Cleanup() manually if the handler
-// causes the application to terminate while a String() call is
-// running.
-var CatchSigint = true
-
 // If CompletionAppendChar is non-zero, readline will append the
 // corresponding character to the prompt after each completion. A
 // typical value would be a space.
@@ -300,36 +289,27 @@ func SaveHistory(path string) error {
 // attributes. This function should be called when program execution
 // stops before the return of a String() call, so as not to leave the
 // terminal in a corrupted state.
-//
-// If the CatchSigint variable is set to true (default), Cleanup() is
-// called automatically on reception of a SIGINT signal.
 func Cleanup() {
 	C.rl_free_line_state()
 	C.rl_cleanup_after_signal()
 }
 
 func handleSignals() {
-	C.rl_catch_signals = 0
-	C.rl_catch_sigwinch = 0
-
-	signals := make(chan os.Signal, 2)
-	signal.Notify(signals, syscall.SIGWINCH, os.Kill, os.Interrupt)
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGWINCH)
 
 	for s := range signals {
 		switch s {
 		case syscall.SIGWINCH:
 			C.rl_resize_terminal()
-		default:
-			if CatchSigint {
-				Cleanup()
-				os.Exit(1)
-			}
 		}
 	}
 }
 
 func init() {
-	go handleSignals()
-
+	C.rl_catch_signals = 0
+	C.rl_catch_sigwinch = 0
 	C.register_readline()
+
+	go handleSignals()
 }
